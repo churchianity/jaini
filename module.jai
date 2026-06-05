@@ -57,46 +57,6 @@
         str := write_ini(my_struct);
         // 'str' will contain a .ini file that encodes the struct, that 'read_ini' will be able to
         // re-populate into a struct of the same (or just similar) type.
-
-
-    Caveats/Implementation Notes and TODOs:
-    ---
-
-    These are things we *could* support, but currently do not for the 'automatic' serialization code:
-    - @TODO support for multi-line strings
-    - @TODO support for unions
-    - @TODO support for tagged unions
-    - @TODO support for array views (this one we may or may not choose to not support long term)
-    - @TODO support for arrays of dimension >= 2
-
-    - we can read comments starting with '#' or ';'. comments can be full-line or started after a key-value pair.
-      comments are discarded by the parser.
-
-      we only *write* comments in the full-single-line, ';' variant.
-
-    - values parsed can be quoted in single or double quotes, or not quoted at all.
-      we always write strings as delimited with double quotes
-
-    - string values parsed preserve the backslashes within them exactly
-
-    - empty sections will be ignored by the parser when reading
-
-    - allocations during runtime are either temporary allocations, or context.alloc for String_Builder
-
-    - depends on Basic, String, Reflection from 'jai/modules/'
-
-    - write_ini and read_ini do not write or read array views (though they do read/write fixed and resizable arrays)
-
-    - we don't validate that keys within a section are unique. if multiple exist, you will get passed all of them by 'read_ini_pair'. 'read_ini' will just use the last-most one in the file.
-
-    - utf-8/ascii only. There are a lot of utf-16 encoded .ini files on windows - we won't read these correctly.
-      we thought about supporting this, but as most of the world has decided (correctly, we think) that utf-16
-      is not a good idea, we will deliberately discourage its use. If you wanted to read windows .ini file data,
-      winbase.h does have some tools for this:
-
-        https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getprivateprofilestring
-
-      though, I cannot vouch for their efficacy.
 */
 
 Ini_Pair :: struct {
