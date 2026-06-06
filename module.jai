@@ -93,14 +93,13 @@ read_ini_pair :: (file_contents: *string, p: *Ini_Pair) -> there_is_still_more_t
     return false;
 }
 
+// @TODO add support for escaped quotes
 read_ini_string :: (_str: *string) -> (success: bool, value_or_error_string: string) {
     quotemark, carriage_return: u8;
     str := _str.*;
     value_start := str.data;
     if str[0] == #char "\"" || str[0] == #char "'" { quotemark = str[0]; str = advance(str, 1); }
-    if str.count == 0 {
-        return false, "Unexpected end of stream!";
-    }
+    if str.count == 0 return false, "Unexpected end of stream!";
     backslash_count := 0;
     while str.count > 0 {
         if str[0] == #char "\\" {
@@ -135,10 +134,13 @@ write_ini_comment :: inline (builder: *String_Builder, comment: string) {
     print(builder, "; %\n", comment);
 }
 
-write_ini_pair :: inline (builder: *String_Builder, key: string, value: string) {
+// writes 'value' literally as-is, so convert your values to strings first as you see fit (tprint may suffice)
+write_ini_pair :: inline (builder: *String_Builder, key: string, value: string, trailing_comment := "") {
     assert(builder != null);
     assert(key     != "");
-    print(builder, "% = %\n", key, value);
+    print(builder, "% = %", key, value);
+    if trailing_comment print(builder, " ; %", trailing_comment);
+    print(builder, "\n");
 }
 
 #if INCLUDE_SERIALIZATION_PROCS {
@@ -190,6 +192,7 @@ lookup_writable_struct_member :: (a: *Any, tis: *Type_Info_Struct, p: *void, sec
     assert(tis != null);
     assert(p   != null);
 
+    auto_release_temp();
     lookup_key := tprint("%.%", section, key);
 
     for * member : tis.members {
@@ -408,7 +411,7 @@ reduce_type :: (ti: *Type_Info) -> *Type_Info, string {
     return ti, property_suffix;
 }
 
-generate_ini_serialization_code_for_struct :: (builder: *String_Builder, stack: *[..]Ini_Section_Descriptor, section: Ini_Section_Descriptor) {
+generate_ini_serialization_code_for_struct :: (builder: *String_Builder, stack: *[..]Ini_Section_Descriptor, section: Ini_Section_Descriptor) #compile_time {
     assert(builder     != null);
     assert(stack       != null);
     assert(section.tis != null);
@@ -477,7 +480,7 @@ Ini_Section_Descriptor :: struct {
     path_to_array: string;
 }
 
-generate_ini_serialization_code :: (tis: *Type_Info_Struct) -> string {
+generate_ini_serialization_code :: (tis: *Type_Info_Struct) -> string #compile_time {
     assert(tis != null);
 
     stack: [..]Ini_Section_Descriptor;

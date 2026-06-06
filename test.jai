@@ -14,19 +14,15 @@
 // - all floats
 // - bools
 // - single-line strings
-// - fixed-size and resizable arrays of 'primitives':
+// - multi-line strings
+// - fixed-size and resizable arrays of 'primitives' (not including strings):
 // - fixed-size and resizable arrays of structs
-//  - enums, enum flags, floats, ints, bools
-//  - @TODO strings
-//
 // - structs
 // - @TODO unions
-//
 // - variants of any of the above, compounded by recursion
 
 // @TOOD arrays of strings
 // @TODO array views
-// @TODO unions
 
 ID :: #type,distinct u32;
 Color :: #type,isa Vector4;
@@ -74,7 +70,7 @@ Test_Struct_D :: struct {
 
 Test_Struct_E :: struct {
     resizable_array_of_primitives: [..]u32;
-    multiline_string: string;
+    multiline_string: string = "uno\ndos\ntrois";
 }
 
 TEST_BUFFER1 :: #string END
@@ -123,20 +119,20 @@ END
 TEST_BUFFER3 :: #string END
 resizable_array_of_primitives = 9 8 7 6 5 4 3 2 1 0
 multiline_string = "first line
-second line with escaped quote\"
+second line with more text
 third line but this one is a little different."
 a = 5
 END
 
 TEST_MULTILINE_STRING :: #string END
 first line
-second line with escaped quote\"
+second line with more text
 third line but this one is a little different.
 END
 
 main :: () {
     {
-        #if 0 { // all primitive types, variants, arrays of primitives, multiple layers of nested structs
+        #if 1 { // all primitive types, variants, arrays of primitives, multiple layers of nested structs
             test: Test_Struct_A;
             str := write_ini(test);
 
@@ -173,7 +169,7 @@ main :: () {
     }
 
     {
-        #if 0 { // arrays of structs, nesting, "using"
+        #if 1 { // arrays of structs, nesting, "using"
             test: Test_Struct_D;
             for 0..1 array_add(*test.resizable_array_of_structs, .{});
             str := write_ini(test);
@@ -200,7 +196,7 @@ main :: () {
     }
 
     {
-        #if 1 { // @TODO two-dimensional arrays, unions,
+        #if 1 { // multiline strings, @TODO unions
             test: Test_Struct_E;
             for 0..9 array_add(*test.resizable_array_of_primitives, xx it);
             str := write_ini(test);
@@ -215,7 +211,9 @@ main :: () {
             assert(test.resizable_array_of_primitives.count == 10, "%", test.resizable_array_of_primitives.count); // 'read_ini' should set the count to 10.
             for 0..9 assert(it == test.resizable_array_of_primitives[9-it], "Failed to correctly read variable 'resizable_array_of_primitives[%]! Got: %", 9-it, test.resizable_array_of_primitives[9-it]);
 
-            assert(test.multiline_string == TEST_MULTILINE_STRING, "Failed to correctly read variable 'multiline_string'! Got: %", test.multiline_string);
+            multiline_string_without_trailing_newline := TEST_MULTILINE_STRING;
+            multiline_string_without_trailing_newline.count -= 1;
+            assert(test.multiline_string == multiline_string_without_trailing_newline, "Failed to correctly read variable 'multiline_string'! Got: %", test.multiline_string);
         }
     }
 
