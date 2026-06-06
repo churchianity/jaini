@@ -1,7 +1,7 @@
 
 This is a `.ini` file parser and writer, with some (optional) additional machinery to automatically convert Jai `struct`s to and from `.ini` files.
 
-Because `.ini` is a simple format with no formal specification which many people extend in unpredictable ways, we limit ourselves to what we consider common, modern, and useful features. We are not suitable to be used as a `.ini` format validator. More details are in the [Caveats and Implementation Notes section](caveats-and-implementation-notes).
+Because `.ini` is a simple format with no formal specification which many people extend in unpredictable ways, we limit ourselves to what we consider common, 'modern' (mostly talking about not supporting utf-16 here), and useful features. We are not suitable to be used as a `.ini` format validator. More details are in the [Caveats and Implementation Notes section](caveats-and-implementation-notes).
 
 # Quick Start
 
@@ -71,15 +71,17 @@ We have a modest test-suite in `test.jai`. Instructions for running it are at th
 - keys within a section are not checked for uniqueness. `read_ini_pair` will pass you them all, and `read_ini` will use the last-most one
 - string values parsed preserve the backslashes within them exactly
 - values parsed can be quoted in single or double quotes, or not quoted at all
+- multiline strings must be quoted
 - comments are discarded by the parser.
-- supports reading comments in the '#' or ';' variant, full single-line or after a key-value pair
+- comments can be in the '#' or ';' variant, full single-line or after a key-value pair
 - depends on `Basic`, `String`, `Reflection` from `jai/modules/`
 - parsing using the manual mode of `read_ini_pair` does not perform allocations
 - `read_ini` performs temporary allocations when looking up struct members
 - writing .ini file data will perform `context.alloc` allocations via `String_Builder`
 
-## `read/write_ini` Caveats
-These are things we *could* support in the automatic serialization codepaths, but currently do not:
+## `read_ini`/`write_ini` Caveats
+These are things we may support *in the automatic serialization codepaths* in the future, but currently do not:
+- multiline strings don't support escaping quotes, so their delimiting quotemarks must not occur in the content of the string right now
 - arrays of strings are not supported
 - unions, tagged unions
 - array views (though we do support fixed and resizable arrays)
