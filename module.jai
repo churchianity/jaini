@@ -13,58 +13,12 @@
     NO_SERIALIZE_NOTE                           := "NO_SERIALIZE"
 );
 
-/*
-    Quick-start:
-    ---
-
-    1. manual mode - reading:
-        contents := ... // load your ini file contents into memory somehow.
-                        // we mutate the string, so if it's constant, or you want to keep the original, do:
-                        // contents := MY_CONSTANT_STRING;
-                        // first.
-        pair: Ini_Pair;
-        while read_ini_pair(*contents, *pair) {
-            // do something with the successfully parsed key-value .ini pair
-        }
-        if pair.error {
-            // we encountered an issue, information is on line, column, and 'error'
-        }
-
-
-    2. manual mode - writing:
-        // these trivial utilities are here for convienence and completeness.
-        builder: String_Builder; // from "jai/modules/Basic"
-        write_ini_comment(*builder, "This is my configuration file!"); // will be written as: '; This is my configuration file!'
-        write_ini_section(*builder, "My Section Name");                // will be written as: '[My Section Name]'
-        write_ini_pair(*builder, "key", "value");                      // will be written as: 'key = value' (convert your values to strings yourself first)
-
-
-    Metaprogram-y Jai Stuff (if INCLUDE_SERIALIZATION_PROCS is true):
-    ---
-
-    3. reading .ini data directly into struct
-        contents := ... // load your ini file contents into memory somehow
-                        // we mutate the string, so if it's constant, or you want to keep the original, do:
-                        // contents := MY_CONSTANT_STRING;
-                        // first.
-        my_struct: My_Struct;
-        read_ini(*contents, *my_struct);
-        // 'my_struct' will have the fields in the ini written into it, recursively for nested structs and arrays
-
-
-    4. writing .ini data from struct directly
-        my_struct: ... // some struct value you have sitting around.
-        str := write_ini(my_struct);
-        // 'str' will contain a .ini file that encodes the struct, that 'read_ini' will be able to
-        // re-populate into a struct of the same (or just similar) type.
-*/
-
 Ini_Pair :: struct {
     section, key, value: string; // section and value may be empty, key cannot be. views into the source .ini data
 
-    error: string; // if set and we return false from 'read_ini_pair', we encountered an error during parsing. Temporary or constant memory
-    line   := 1;
-    column := 1;
+    error: string; // if set and we return false from 'read_ini_pair/read_ini', we encountered an error during parsing. Temporary or constant memory
+                   // you can get the location in the source data where we encountered an issue by taking the current address of 'file_contents'
+                   // and subtracting it from the original base address to get the byte offset (though this may be inexact).
 }
 
 // 'file_contents' must be writable, as we advance through the string as we parse.
@@ -80,10 +34,8 @@ read_ini_pair :: (file_contents: *string, p: *Ini_Pair) -> there_is_still_more_t
     }
 
     advance :: (str: string, error_message_if_we_hit_the_end: string = "") -> string #expand {
-        if str[0] == #char "\n" { p.line += 1; p.column = 1; }
         s := advance(str, 1);
         if s.count == 0 { p.error = error_message_if_we_hit_the_end; `return false; }
-        p.column += 1;
         return s;
     }
 
@@ -109,8 +61,8 @@ read_ini_pair :: (file_contents: *string, p: *Ini_Pair) -> there_is_still_more_t
                 str = advance(str, "Unexpected end when looking for closing brace!");
             }
             if p.section == "" {
-                assert(false, "Got an empty section!");
-                return false;
+                log("Warning: found empty section!");
+                return true;
             }
         } else { // parse a key-value pair. must be there, because getting here means it's not a comment, whitespace, or section '['
             // parse the key
@@ -129,7 +81,7 @@ read_ini_pair :: (file_contents: *string, p: *Ini_Pair) -> there_is_still_more_t
             str = skip(str, "Unexpected end looking for value in key-value pair!");
 
             // the value. delimited by a non-escaped newline. strings may also be inside single or double quotes
-            success, value := read_ini_string(*str); // @TODO we lose line/column info at this point
+            success, value := read_ini_string(*str);
             if !success { p.error = value; return false; }
             p.value = value;
 
@@ -161,7 +113,6 @@ read_ini_string :: (_str: *string) -> (success: bool, value_or_error_string: str
             }
             if !quotemark || previous == quotemark { // either there's no beginning quotemark at all, or the character before the newline is the quotemark, so we should end the string.
                 break;
-                //return false, ""; //tprint("End of value (for key: '%') doesn't close the opening quotemark (quote is: %, got: %)!", v.key, quotemark, previous);
             }
         } else {
             backslash_count = 0;
@@ -185,8 +136,8 @@ write_ini_comment :: inline (builder: *String_Builder, comment: string) {
 }
 
 write_ini_pair :: inline (builder: *String_Builder, key: string, value: string) {
-    assert(builder    != null);
-    assert(key        != "");
+    assert(builder != null);
+    assert(key     != "");
     print(builder, "% = %\n", key, value);
 }
 
@@ -207,12 +158,13 @@ write_ini :: (value: $T) -> string
 // if 'copy_strings' is true, we'll call 'copy_string' on all string values we encounter as
 // we assign to 'v', otherwise the strings will be string views into the source string 'ini'.
 //
-read_ini :: (ini: *string, v: *$T, strip_quotes := true, copy_strings := true) -> success: bool, error: Ini_Pair
+read_ini :: (ini: *string, v: *$T, strip_quotes := true, copy_strings := true) -> success: bool, error: string
 #modify {
     return (cast(*Type_Info)T).type == .STRUCT;
 } {
     assert(ini != null);
     assert(v   != null);
+    base := ini.*;
     pair: Ini_Pair;
     while read_ini_pair(ini, *pair) {
         a: Any;
@@ -225,10 +177,10 @@ read_ini :: (ini: *string, v: *$T, strip_quotes := true, copy_strings := true) -
         assert(success, "Failed to set value from string (pair %)", pair);
     }
     if pair.error {
-        log_error("error: %", pair.error);
-        return false, pair;
+        log_error("error (byte offset: %): %", ini.data - base.data, pair.error);
+        return false, pair.error;
     }
-    return true, .{};
+    return true, "";
 }
 
 #scope_file
@@ -348,8 +300,10 @@ set_ini_value_from_string :: (_any: Any, text: string, strip_quotes := true, cop
             } else {
                 valid = range_check_and_store(i.(u64), ti_integer, any.value_pointer);
             }
-            assert(valid);
-            //if !valid return false, "";
+            if !valid {
+                log("Warning: integer value it out of bounds of the integer type in the corresponding struct. Int is: %, and the type is size: %, signed: %", i, ti_integer.runtime_size, ti_integer.signed);
+                return false, "";
+            }
             return true, remainder;
 
         case .FLOAT;
@@ -490,12 +444,6 @@ generate_ini_serialization_code_for_struct :: (builder: *String_Builder, stack: 
                 print(builder, "%for % print(*builder, \"\% \", it);\n", indent, path);
                 print(builder, "%print(*builder, \"\\n\");\n", indent);
                 continue;
-            } else if tia.element_type.type == .STRING { // @NOTE same as above, but wrapped in double-quotes.
-                // @NOTE this can result in very long lines if your strings are big, and also probably doesn't work for multi-line strings. We might need to treat strings as structs/needing their own sections! @TODO
-                print(builder, "%print(*builder, \"% = \");\n", indent, it.name);
-                print(builder, "%for % print(*builder, \"\\\"\%\\\" \", it);\n", indent, path, it.name);
-                print(builder, "%print(*builder, \"\\n\");\n", indent);
-                continue;
             } else if tia.element_type.type == .STRUCT {
                 grown_infix       := ifx it.name == "" then section.name_infix else tprint("%.%", section.name_infix, it.name); // handle anonymous structs
                 next_section_name := tprint("%.\%", grown_infix);
@@ -510,7 +458,7 @@ generate_ini_serialization_code_for_struct :: (builder: *String_Builder, stack: 
             array_add(stack, { next_section_name, section.name_prefix, grown_infix, ti.(*Type_Info_Struct), section.indent, "" });
         } else if ti.type == .INTEGER || ti.type == .FLOAT || ti.type == .ENUM || ti.type == .BOOL {
             print(builder, "%print(*builder, \"% = \%\\n\", %);\n", indent, it.name, path);
-        } else if ti.type == .STRING { // same as other primitives but wrapped in double-quotes.
+        } else if ti.type == .STRING { // same as primitives but wrapped in double-quotes.
             print(builder, "%print(*builder, \"% = \\\"\%\\\"\\n\", %);\n", indent, it.name, path);
         } else {
             #if WRITE_UNSUPPORTED_STRUCT_FIELDS_AS_COMMENTS print(builder, "%print(*builder, \"; % (skipped, type is %)\\n\");\n", indent, it.name, it.type.type);
@@ -582,7 +530,7 @@ INDENTS :: string.[
 
 ITERATORS :: " ijklmnopqrstuvwxyzabcdefgh";
 
-#import "String"; // starts_with, slice. Easy to replace if you don't want to depend on String!
+#import "String"; // starts_with, slice
 #import "Reflection"; // range_check_and_store, get_struct_field_info
 
 #if TREAT_MATH_MODULE_VECTORS_AS_PRIMITIVES {
@@ -593,5 +541,5 @@ ITERATORS :: " ijklmnopqrstuvwxyzabcdefgh";
 }
 }
 
-#import "Basic"; // String_Builder, print, advance, log, tprint, min, max
+#import "Basic"; // String_Builder, print, advance, log, tprint, min, max, clamp
 

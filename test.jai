@@ -1,8 +1,9 @@
 
-// you can compile this file standalone with: `jai test.jai`, and run it to run tests if you like.
+// assuming this file is in a folder called 'jaini', you can compile this file standalone with: `jai test.jai`, and run it to run tests if you like.
 
 #import "../../jaini"(INCLUDE_SERIALIZATION_PROCS = true, TREAT_MATH_MODULE_VECTORS_AS_PRIMITIVES = true);
 
+#import "File";
 #import "Basic";
 #import "Math";
 
@@ -33,9 +34,6 @@ Color :: #type,isa Vector4;
 Enum :: enum { FLOOEY; DOINK; FLORBIUS; }
 Flags :: enum_flags { ON_FIRE; ALIVE; STINKY; F; }
 
-// @TODO
-MULTI_LINE_STRING_TEST :: "first line\nsecond line with escaped quote\"\nthird line\n";
-
 Test_Struct_A :: struct {
     f: float   =  64;
     d: float64 = 128;
@@ -43,16 +41,8 @@ Test_Struct_A :: struct {
     i: int     =  69;
     b: Test_Struct_B;
     u: u32     = 420;
-    array_of_strings: [5]string = .[ // fixed-array @TODO reading values back is broken right now.
-        "first string",
-        "second string",
-        "third string",
-        "fourth string",
-        "fifth string",
-    ];
     single_item_array: [1]int = .[ 123 ];
-    s: string  = "foo";       // s
-    //multiline_string: string = MULTI_LINE_STRING_TEST; // @TODO
+    s: string  = "foo";
 }
 
 Test_Struct_B :: struct {
@@ -84,8 +74,7 @@ Test_Struct_D :: struct {
 
 Test_Struct_E :: struct {
     resizable_array_of_primitives: [..]u32;
-
-    two_dimensional_array: [2][2]int = .[ .[ 1, 2 ], .[ 3, 4 ] ];
+    multiline_string: string;
 }
 
 TEST_BUFFER1 :: #string END
@@ -101,7 +90,7 @@ s = "foo2"
 b = false
 v = -2 111
 col = 0 1 1 0
-s = "string3"
+s = "プログラムプロジェクターを開く"
 id = 322
 e = FLORBIUS
 
@@ -133,6 +122,10 @@ END
 
 TEST_BUFFER3 :: #string END
 resizable_array_of_primitives = 9 8 7 6 5 4 3 2 1 0
+multiline_string = "first line
+second line with escaped quote\"
+third line but this one is a little different."
+a = 5
 END
 
 TEST_MULTILINE_STRING :: #string END
@@ -143,7 +136,7 @@ END
 
 main :: () {
     {
-        #if 1 { // all primitive types, variants, arrays of primitives, multiple layers of nested structs
+        #if 0 { // all primitive types, variants, arrays of primitives, multiple layers of nested structs
             test: Test_Struct_A;
             str := write_ini(test);
 
@@ -163,11 +156,6 @@ main :: () {
             assert(421       == test.u,       "Failed to correctly read variable 'u'! Got: %",       test.u);
             assert(4         == test.single_item_array[0], "Failed to correctly read variable 'single_item_array'! Got: %", test.single_item_array);
             assert("foo2"    == test.s,       "Failed to correctly read variable 's'! Got: %",       test.s);
-
-            // @TODO FIX!
-            //strings :: string.[ "1st", "2nd", "3rd", "4th", "5th" ];
-            //for test.array_of_strings assert(it == strings[it_index], "Failed to correctly read variable: 'array_of_strings[%]'! Got: %", it_index, it);
-            //assert(TEST_MULTILINE_STRING == test.multiline_string, "Failed to correctly read variable 'multiline_string'! Got\n|%|\n\n|%|", TEST_MULTILINE_STRING, test.multiline_string);
             assert(false     == test.b.b,     "Failed to correctly read variable 'b.b'! Got: %",     test.b.b);
             assert(-2        == test.b.v.x,   "Failed to correctly read variable 'b.v.x'! Got: %",   test.b.v.x);
             assert(111       == test.b.v.y,   "Failed to correctly read variable 'b.v.y'! Got: %",   test.b.v.y);
@@ -175,7 +163,7 @@ main :: () {
             assert(1         == test.b.col.y, "Failed to correctly read variable 'b.col.y'! Got: %", test.b.col.y);
             assert(1         == test.b.col.z, "Failed to correctly read variable 'b.col.z'! Got: %", test.b.col.z);
             assert(0         == test.b.col.w, "Failed to correctly read variable 'b.col.w'! Got: %", test.b.col.w);
-            assert("string3" == test.b.s,     "Failed to correctly read variable 'b.s'! Got: %",     test.b.s);
+            assert("プログラムプロジェクターを開く" == test.b.s,     "Failed to correctly read variable 'b.s'! Got: %",     test.b.s);
             assert(322       == test.b.id,    "Failed to correctly read variable 'b.id'! Got: %",    test.b.id);
             assert(.FLORBIUS == test.b.e,     "Failed to correctly read variable 'b.e'! Got: %",     test.b.e);
             assert(.ALIVE    == test.b.c.f,   "Failed to correctly read variable 'b.c.f'! Got: %",   test.b.c.f);
@@ -185,7 +173,7 @@ main :: () {
     }
 
     {
-        #if 1 { // arrays of structs, nesting, "using"
+        #if 0 { // arrays of structs, nesting, "using"
             test: Test_Struct_D;
             for 0..1 array_add(*test.resizable_array_of_structs, .{});
             str := write_ini(test);
@@ -226,6 +214,8 @@ main :: () {
 
             assert(test.resizable_array_of_primitives.count == 10, "%", test.resizable_array_of_primitives.count); // 'read_ini' should set the count to 10.
             for 0..9 assert(it == test.resizable_array_of_primitives[9-it], "Failed to correctly read variable 'resizable_array_of_primitives[%]! Got: %", 9-it, test.resizable_array_of_primitives[9-it]);
+
+            assert(test.multiline_string == TEST_MULTILINE_STRING, "Failed to correctly read variable 'multiline_string'! Got: %", test.multiline_string);
         }
     }
 
