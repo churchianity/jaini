@@ -121,7 +121,6 @@ resizable_array_of_primitives = 9 8 7 6 5 4 3 2 1 0
 multiline_string = "first line
 second line with more text
 third line but this one is a little different."
-a = 5
 END
 
 TEST_MULTILINE_STRING :: #string END
