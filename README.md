@@ -27,7 +27,7 @@ while read_ini_pair(*contents, *pair) {
     // do something with the successfully parsed key-value .ini pair
 }
 if pair.error {
-    // we encountered an issue, information is on line, column, and 'error'
+    // we encountered an issue!
 }
 
 //------------------------------------------------------------------------------
