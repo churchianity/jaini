@@ -60,10 +60,7 @@ read_ini_pair :: (file_contents: *string, p: *Ini_Pair) -> there_is_still_more_t
                 }
                 str = advance(str, "Unexpected end when looking for closing brace!");
             }
-            if p.section == "" {
-                log("Warning: found empty section!");
-                return true;
-            }
+            if p.section == "" then log("Warning: found empty section!");
         } else { // parse a key-value pair. must be there, because getting here means it's not a comment, whitespace, or section '['
             // parse the key
             key_start := str.data;
