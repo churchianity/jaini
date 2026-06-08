@@ -75,7 +75,7 @@ We have a modest test-suite in `test.jai`. Instructions for running it are at th
 - multiline strings must be quoted
 - comments are discarded by the parser.
 - comments can be in the '#' or ';' variant, full single-line or after a key-value pair
-- depends on `Basic`, `String`, `Reflection` from `jai/modules/`
+- depends on `Basic`. If `INCLUDE_SERIALIZATION_PROCS` is set to true, also depends on `String` and `Reflection`
 - parsing using the manual mode of `read_ini_pair` does not perform allocations
 - `read_ini` performs temporary allocations when looking up struct members
 - writing .ini file data will perform `context.alloc` allocations via `String_Builder`
