@@ -70,6 +70,7 @@ We have a modest test-suite in `test.jai`. Instructions for running it are at th
 - utf-8 or ascii only (sorry, no utf-16)
 - empty sections will be ignored by the parser
 - keys within a section are not checked for uniqueness. `read_ini_pair` will pass you them all, and `read_ini` will use the last-most one
+- naked keys/empty values are not allowed (we may support these in the future though)
 - string values parsed preserve the backslashes within them exactly
 - values parsed can be quoted in single or double quotes, or not quoted at all
 - multiline strings must be quoted

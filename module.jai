@@ -14,7 +14,9 @@
 );
 
 Ini_Pair :: struct {
-    section, key, value: string; // section and value may be empty, key cannot be. views into the source .ini data
+    section, key, value: string; // views into the source .ini data. section may be empty,
+                                 // key and value must not be (we may support empty values/naked keys in the future though),
+                                 // assuming no errors.
 
     error: string; // if set and we return false from 'read_ini_pair/read_ini', we encountered an error during parsing. Temporary or constant memory
                    // you can get the location in the source data where we encountered an issue by taking the current address of 'file_contents'
@@ -61,20 +63,25 @@ read_ini_pair :: (file_contents: *string, p: *Ini_Pair) -> there_is_still_more_t
                 str = advance(str, "Unexpected end when looking for closing brace!");
             }
             if p.section == "" then log("Warning: found empty section!");
-        } else { // parse a key-value pair. must be there, because getting here means it's not a comment, whitespace, or section '['
+        } else { // parse a key-value pair. must be there, because getting here means it's not a comment, whitespace, or section beginning '['
             // parse the key
             key_start := str.data;
             trailing_whitespace := 0;
-            while str.count > 0 && str[0] != ":" && str[0] != "=" {
-                if is_space(str[0]) trailing_whitespace += 1; else trailing_whitespace = 0;
-                str = advance(str, tprint("Unexpected end looking for key! count %, str: |%|", str.count, str));
+            while str.count > 0 && str[0] != #char ":" && str[0] != #char "=" && str[0] != #char "\n" {
+                if is_space(str[0]) {
+                    trailing_whitespace += 1;
+                } else if trailing_whitespace > 0 {
+                    p.error = "Non-whitespace character following whitespace character in a key - this is not allowed!";
+                    return false;
+                }
+                str = advance(str, "Unexpected end when parsing key!");
             }
             p.key = to_string(key_start, str.data-key_start-trailing_whitespace);
 
             // equal sign (or colon), with optional whitespace around it
             str = skip(str, "Unexpected end looking for equal sign or colon in key-value pair!");
-            if str[0] != #char "=" && str[0] != #char ":" { p.error = tprint("Parsed a key '%', but didn't find a equal sign or colon after it...", p.key); return false; }
-            str = advance(str, "Unexpected end looking for value in key-value pair!");
+            if str[0] != #char "=" && str[0] != #char ":" { p.error = "Parsed a key, but didn't find a equal sign or colon after it!"; return false; }
+            str = advance(str, "Unexpected end looking for value in key-value pair!"); // move past the ':'/'='
             str = skip(str, "Unexpected end looking for value in key-value pair!");
 
             // the value. delimited by a non-escaped newline. strings may also be inside single or double quotes
