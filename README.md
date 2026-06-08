@@ -21,7 +21,7 @@ Usage Examples (mostly valid pseudocode):
 //------------------------------------------------------------------------------
 // 1. manual mode - reading:
 contents := ... // load your .ini file contents into memory.
-                // we mutate the string, so this variable must be writable.
+                // we advance through the string, so this variable must be writable.
 pair: Ini_Pair;
 while read_ini_pair(*contents, *pair) {
     // do something with the successfully parsed key-value .ini pair
@@ -40,7 +40,7 @@ str := write_ini(my_struct);
 //------------------------------------------------------------------------------
 // 3. reading .ini data directly into struct
 contents := ... // load your .ini file contents into memory
-                // we mutate the string, so this variable must be writable.
+                // we advance through the string, so this variable must be writable.
 my_struct: My_Struct;
 success, error_msg := read_ini(*contents, *my_struct);
 assert(success, error_msg);
