@@ -1,7 +1,7 @@
 
 This is a `.ini` file parser and writer, with some (optional) additional machinery to automatically convert Jai `struct`s to and from `.ini` files.
 
-Because `.ini` is a simple format with no formal specification which many people extend in unpredictable ways, we limit ourselves to what we consider common, 'modern' (mostly talking about not supporting utf-16 here), and useful features. We are not suitable to be used as a `.ini` format validator. More details are in the [Caveats and Implementation Notes section](caveats-and-implementation-notes).
+Because `.ini` is a simple format with no formal specification which many people extend in unpredictable ways, we limit ourselves to what we consider common, 'modern' (mostly talking about not supporting utf-16 here), and useful features. We are not suitable to be used as a `.ini` format validator. More details are in the [Caveats and Implementation Notes section](#caveats-and-implementation-notes).
 
 # Quick Start
 
