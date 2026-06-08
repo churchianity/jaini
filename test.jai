@@ -142,7 +142,6 @@ main :: () {
             success := read_ini(*in, *test);
             assert(success, "The test buffer failed to be parsed by the .ini reader - this is pretty bad!");
 
-            // now check that we read what we expect:
             assert(65.       == test.f,       "Failed to correctly read variable 'f'! Got: %",       test.f);
             assert(129.      == test.d,       "Failed to correctly read variable 'd'! Got: %",       test.d);
             assert(0.6       == test.a[0],    "Failed to correctly read variable 'a[0]'! Got: %",    test.a[0]);
