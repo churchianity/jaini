@@ -42,7 +42,8 @@ str := write_ini(my_struct);
 contents := ... // load your .ini file contents into memory
                 // we mutate the string, so this variable must be writable.
 my_struct: My_Struct;
-read_ini(*contents, *my_struct);
+success, error_msg := read_ini(*contents, *my_struct);
+assert(success, error_msg);
 // 'my_struct' will be populated recursively by the parsed .ini pairs
 // we'll print warnings about pairs that have no corresponding struct member
 
